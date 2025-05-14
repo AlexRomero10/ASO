@@ -210,3 +210,19 @@ Indicamos las credenciales que hemos estado usando hasta ahora:
 En este paso marcamos las opciones necesarias para que el sistema pueda autenticar usuarios desde el directorio LDAP:
 
 ![10](ldap/10.png)
+
+Modificamos el fichero /etc/nsswitch.conf para que el sistema utilice el servicio LDAP:
+
+![11](ldap/11.png)
+
+Comprobamos el uuid del usuario asoprueba con el siguiente comando:
+
+```
+id asoprueba
+```
+
+![12](ldap/12.png)
+
+Y para terminar, nos logueamos con el usuario asoprueba
+
+![13](ldap/13.png)
