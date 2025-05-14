@@ -49,4 +49,4 @@ The following additional packages will be installed:
 
 Durante el proceso de instalación, se solicitará una contraseña para el usuario administrador del servicio:
 
-![1](img/1.png)
+![1](ldap/1.png)
