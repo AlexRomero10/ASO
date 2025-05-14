@@ -50,3 +50,58 @@ The following additional packages will be installed:
 Durante el proceso de instalación, se solicitará una contraseña para el usuario administrador del servicio:
 
 ![1](ldap/1.png)
+
+Tras completar la instalación, podemos verificar que el puerto TCP 389 está abierto, ya que es el encargado de recibir las solicitudes al servicio.
+
+```
+alejandro@luffy:~$ sudo netstat -tlnp | egrep slap
+```
+
+![2](ldap/2.png)
+
+Tras esto, instalaremos el paquete de herramientas que utilizará OpenLDAP:
+
+```
+alejandro@luffy:~$ sudo apt install ldap-utils
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+```
+
+A partir de este momento, es posible utilizar el comando ldapsearch junto con las credenciales configuradas durante la instalación para consultar la información almacenada en nuestro directorio.
+
+```
+ldapsearch -x -D "cn=admin,dc=aleromero,dc=gonzalonazareno,dc=org" -b "dc=aleromero,dc=gonzalonazareno,dc=org" -W
+```
+
+![3](ldap/3.png)
+
+Con el fin de mantener una mejor organización de los objetos que vamos a definir, generaremos un nuevo archivo que contendrá la siguiente información:
+
+```
+alejandro@luffy:~$ cat UnidadesOrganizativas.ldif 
+dn: ou=Personas,dc=aleromero,dc=gonzalonazareno,dc=org
+objectClass: top
+objectClass: organizationalUnit
+ou: Personas
+
+dn: ou=Grupos,dc=aleromero,dc=gonzalonazareno,dc=org
+objectClass: top
+objectClass: organizationalUnit
+ou: Grupos
+```
+
+Una vez creado este archivo, lo incorporaremos al directorio utilizando el siguiente comando:
+
+```
+ldapadd -x -D "cn=admin,dc=aleromero,dc=gonzalonazareno,dc=org" -f UnidadesOrganizativas.ldif -W
+```
+
+Utilizamos nuevamente el comando ldapsearch para verificar que los cambios se hayan aplicado correctamente.
+
+```
+ldapsearch -x -b dc=aleromero,dc=gonzalonazareno,dc=org
+```
+
+![4](ldap/4.png)
+
