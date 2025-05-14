@@ -105,3 +105,108 @@ ldapsearch -x -b dc=aleromero,dc=gonzalonazareno,dc=org
 
 ![4](ldap/4.png)
 
+
+Ademas, crearemos un grupo llamado asoprueba
+
+```
+alejandro@luffy:~$ cat grupos.ldif 
+dn: cn=asoprueba,ou=Grupos,dc=aleromero,dc=gonzalonazareno,dc=org
+objectClass: top
+objectClass: posixGroup
+gidNumber: 2001
+cn: asoprueba
+```
+
+Lo añadimos a nuestro directorio:
+
+```
+ldapadd -x -D 'cn=admin,dc=aleromero,dc=gonzalonazareno,dc=org' -W -f grupos.ldif
+```
+
+Comprobamos que se han efectuado los cambios:
+
+```
+ldapsearch -x -b dc=aleromero,dc=gonzalonazareno,dc=org
+```
+
+![5](ldap/5.png)
+
+Creamos una contraseña cifrada para nuestro usuario asoprueba con el comando slappasswd:
+
+![6](ldap/6.png)
+
+Creamos el usuario asoprueba
+
+```
+alejandro@luffy:~$ cat usuarios.ldif 
+dn: uid=asoprueba,ou=Personas,dc=aleromero,dc=gonzalonazareno,dc=org
+objectClass: top
+objectClass: posixAccount
+objectClass: inetOrgPerson
+objectClass: person
+cn: asoprueba
+uid: asoprueba
+uidNumber: 2001
+gidNumber: 2001
+homeDirectory: /home/nfs/asoprueba
+loginShell: /bin/bash
+userPassword: {SSHA}L/agZ+tPgjTLCdldyORqGgZjRj2tsNrw
+sn: asoprueba
+mail: prueba@gmail.com
+givenName: asoprueba
+```
+
+Añadimos el usuario a nuestro directorio:
+
+```
+ldapadd -x -D 'cn=admin,dc=aleromero,dc=gonzalonazareno,dc=org' -W -f usuarios.ldif
+```
+
+Comprobamos que se ha añadido correctamente:
+
+![7](ldap/7.png)
+
+El usuario asoprueba no podrá acceder a su cuenta, ya que no tiene un directorio de inicio. Para crearlo, ejecutaremos el siguiente comando:
+
+```
+alejandro@luffy:~$ sudo mkdir /home/nfs
+alejandro@luffy:~$ sudo mkdir /home/nfs/asoprueba
+alejandro@luffy:~$ sudo chown 2001:2001 /home/nfs/asoprueba
+```
+
+Tras esto, modificaremos el fichero /etc/exports para que el usuario asoprueba pueda acceder a su directorio de inicio; añadiendo lo siguiente:
+
+```
+/home/nfs       *(rw,fsid=0,subtree_check)
+```
+
+Además, crearemos un directorio para pruebas posteriores:
+
+```
+mkdir prueba-servidor
+```
+
+Reiniciamos el servicio para aplicar los cambios:
+
+```
+alejandro@luffy:~$ sudo /etc/init.d/nfs-kernel-server restart
+Restarting nfs-kernel-server (via systemctl): nfs-kernel-server.service.
+```
+
+En el servidor LDAP, procedemos a instalar los paquetes necesarios para que el sistema pueda resolver nombres de usuarios (UID), grupos (GID), consultar datos en un directorio LDAP, autenticarse y almacenar en caché dicha información.
+
+```
+apt-get install libpam-ldapd libpam-ldap nscd libnss-ldap
+```
+
+En la instalación, se nos pedirá una dirección ip, en este caso, usaremos la local:
+
+![8](ldap/8.png)
+
+Indicamos las credenciales que hemos estado usando hasta ahora:
+
+![9](ldap/9.png)
+
+En este paso marcamos las opciones necesarias para que el sistema pueda autenticar usuarios desde el directorio LDAP:
+
+![10](ldap/10.png)
