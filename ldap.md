@@ -226,3 +226,253 @@ id asoprueba
 Y para terminar, nos logueamos con el usuario asoprueba
 
 ![13](ldap/13.png)
+
+
+### Configuración del Cliente Ubuntu
+
+Para configurar un cliente Ubuntu, utilizaremos la máquina sanji; primero, debemos instalar el paquete de herramientas de ldap:
+
+```
+apt install ldap-utils
+```
+
+Configuramos el fichero de configuración del cliente, añadiendo las últimas 2 líneas:
+
+```
+aleromero@sanji:~$ cat /etc/ldap/ldap.conf
+#
+# LDAP Defaults
+#
+
+# See ldap.conf(5) for details
+# This file should be world readable but not world writable.
+
+#BASE	dc=example,dc=com
+#URI	ldap://ldap.example.com ldap://ldap-provider.example.com:666
+
+#SIZELIMIT	12
+#TIMELIMIT	15
+#DEREF		never
+
+# TLS certificates (needed for GnuTLS)
+TLS_CACERT	/etc/ssl/certs/ca-certificates.crt
+
+BASE dc=aleromero,dc=gonzalonazareno,dc=org
+URI ldap://luffy.aleromero.gonzalonazareno.org
+```
+
+Tras esto, probamos que funciona correctamente con el siguiente comando:
+
+```
+ldapsearch -x -b dc=alejandrolf,dc=gonzalonazareno,dc=org
+```
+![14](ldap/14.png)
+
+Además, probamos la conexión con el usuario asoprueba:
+
+```
+ldapwhoami -x -D "uid=asoprueba,ou=Personas,dc=aleromero,dc=gonzalonazareno,dc=org" -W
+```
+
+![15](ldap/15.png)
+
+Instalaremos los siguientes paquetes necesarios:
+```
+sudo apt install -y libnss-ldapd libpam-ldapd nslcd nscd
+```
+
+En la siguiente ventana que nos aparecerá, indicamos la dirección ya usada:
+
+![16](ldap/16.png)
+
+Modificamos el fichero /etc/nsswitch.conf para que el sistema utilice el servicio LDAP para la resolución de nombres:
+
+![17](ldap/17.png)
+
+Reiniciamos el servicio nscd para poder acceder al servidor con el comando login:
+
+```
+sudo service nscd restart
+```
+
+Para montar la carpeta de inicio del usuario asoprueba, instalaremos el paquete para usar NFS como cliente:
+
+```
+sudo apt install -y nfs-common
+```
+
+Activamos el servicio:
+
+```
+sudo systemctl start nfs-client.target & sudo systemctl enable nfs-client.target
+
+```
+
+Creamos el directorio de montaje:
+
+```
+sudo mkdir /home/nfs
+sudo mkdir /home/nfs/asoprueba
+sudo chown 2001:2001 /home/nfs/asoprueba
+```
+
+Cargamos el módulo de NFS con el siguiente módulo:
+
+```
+root@sanji:~# echo NFS | tee -a /etc/modules
+NFS
+```
+
+Creamos una unidad systemd para montar el directorio con NFS:
+
+```
+root@sanji:~# cat /etc/systemd/system/home-nfs.mount
+[Unit]
+Description=Montaje NFS
+Requires=network-online.target
+After=network-online.target
+[Mount]
+What=192.168.0.1:/home/nfs
+Where=/home/nfs
+Options=_netdev,auto
+Type=nfs
+[Install]
+WantedBy=multi-user.target
+```
+
+Comprobamos que funciona correctamente:
+
+![18](ldap/18.png)
+
+Usamos el comando df -h para comprobar que se ha montado correctamente:
+
+![19](ldap/19.png)
+
+Probamos a conectarnos con el usuario asoprueba:
+
+![20](ldap/20.png)
+
+Como vemos, aparece el directorio que creamos dentro del directorio de inicio del usuario; para terminar con las comprobaciones, crearemos un fichero de texto:
+
+![21](ldap/21.png)
+
+
+Nos vamos a luffy y comprobamos que el fichero de texto creado en sanji se encuentra en el directorio:
+
+![22](ldap/22.png)
+
+
+### Configuración del Cliente Rocky
+
+Para configurar un cliente Rocky, utilizaremos la máquina zoro; comenzaremos instalando el paquete openldap-clients para poder conectarnos al servidor LDAP y comprobar que todo funciona correctamente.
+
+```
+sudo dnf install openldap-clients sssd sssd-ldap oddjob-mkhomedir sssd-tools -y
+```
+
+Editaremos el fichero /etc/pam.d/system-auth añadiendo la siguiente línea:
+
+![23](ldap/23.png)
+
+Creamos un fichero llamado /etc/openldap/ldap.conf con el siguiente contenido para que el cliente pueda conectarse al servidor LDAP:
+
+```
+BASE dc=aleromero,dc=gonzalonazareno,dc=org
+URI ldap://luffy.aleromero.gonzalonazareno.org
+```
+
+Para que el usuario asoprueba pueda conectarse al servidor LDAP, tenemos que editar /etc/pam.d/system-auth y añadir la siguiente línea:
+
+```
+session required pam_mkhomedir.so skel=/etc/skel umask=0022
+```
+
+![24](ldap/24.png)
+
+Tras esto, probamos que funciona correctamente con el siguiente comando:
+
+```
+ldapsearch -x -b dc=aleromero,dc=gonzalonazareno,dc=org
+```
+
+![25](ldap/25.png)
+
+Además, probamos la conexión con el usuario asoprueba:
+
+```
+ldapwhoami -x -D "uid=asoprueba,ou=Personas,dc=aleromero,dc=gonzalonazareno,dc=org" -W
+```
+
+Para realizar el login al servidor LDAP, instalamos sssd y sssd-ldap; además, crearemos un fichero de configuración llamado /etc/ssd/sssd.conf:
+
+```
+[alejandro@zoro ~]$ sudo cat /etc/sssd/sssd.conf
+[domain/default]
+id_provider = ldap
+autofs_provider = ldap
+auth_provider = ldap
+chpass_provider = ldap
+ldap_uri = ldap://luffy.aleromero.gonzalonazareno.org
+ldap_search_base = dc=aleromero,dc=gonzalonazareno,dc=org
+ldap_id_use_start_tls = True
+ldap_tls_cacertdir = /etc/openldap/cacerts
+cache_credentials = True
+ldap_tls_reqcert = allow
+
+[sssd]
+services = nss, pam, autofs
+domains = default
+
+[nss]
+homedir_substring = /home/nfs
+```
+
+Le cambiamos los permisos al fichero /etc/sssd/sssd.conf; habilitamos el servicio y lo reiniciamos:
+
+```
+[alejandro@zoro ~]$ sudo chmod 600 /etc/sssd/sssd.conf
+[alejandro@zoro ~]$ sudo systemctl restart sssd
+[alejandro@zoro ~]$ sudo systemctl enable sssd
+```
+
+Creamos el directorio /home/nfs y lo hacemos propietario del usuario asoprueba:
+
+```
+[alejandro@zoro ~]$ sudo mkdir /home/nfs
+[alejandro@zoro ~]$ sudo mkdir /home/nfs/asoprueba
+[alejandro@zoro ~]$ sudo chown 2001:2001 /home/nfs/asoprueba
+```
+
+Creamos una unidad systemd para realizar el montaje mediante NFS:
+
+```
+[alejandro@zoro ~]$ sudo cat /etc/systemd/system/home-nfs.mount
+[Unit]
+Description=Montaje NFS
+Requires=NetworkManager.service
+After=NetworkManager.service
+[Mount]
+What=172.16.0.72:/home/nfs
+Where=/home/nfs
+Options=_netdev,auto
+Type=nfs
+[Install]
+WantedBy=multi-user.target
+```
+
+Activamos el servicio correspondiente:
+
+```
+[alejandro@zoro ~]$ sudo systemctl daemon-reload
+[alejandro@zoro ~]$ sudo systemctl start home-nfs.mount
+[alejandro@zoro ~]$ sudo systemctl enable home-nfs.mount
+Created symlink /etc/systemd/system/multi-user.target.wants/home-nfs.mount → /etc/systemd/system/home-nfs.mount.
+```
+
+Comprobamos que el directorio se ha montado correctamente con el comando df -h:
+
+![26](ldap/26.png)
+
+Accedemos al directorio de montaje y comprobamos que, podemos ver los ficheros de prueba, creados anteriormente, desde el resto de máquinas:
+
+![27](ldap/27.png)
