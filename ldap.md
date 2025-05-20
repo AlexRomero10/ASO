@@ -409,15 +409,23 @@ Para realizar el login al servidor LDAP, instalamos sssd y sssd-ldap; además, c
 [alejandro@zoro ~]$ sudo cat /etc/sssd/sssd.conf
 [domain/default]
 id_provider = ldap
-autofs_provider = ldap
 auth_provider = ldap
 chpass_provider = ldap
+autofs_provider = ldap
+
 ldap_uri = ldap://luffy.aleromero.gonzalonazareno.org
 ldap_search_base = dc=aleromero,dc=gonzalonazareno,dc=org
-ldap_id_use_start_tls = True
-ldap_tls_cacertdir = /etc/openldap/cacerts
-cache_credentials = True
+ldap_user_search_base = ou=Personas,dc=aleromero,dc=gonzalonazareno,dc=org
+ldap_user_object_class = posixAccount
+
+ldap_id_use_start_tls = False
+# O usa esta línea si prefieres SSL
+# ldap_uri = ldaps://luffy.aleromero.gonzalonazareno.org
+
 ldap_tls_reqcert = allow
+ldap_tls_cacertdir = /etc/openldap/cacerts
+
+cache_credentials = True
 
 [sssd]
 services = nss, pam, autofs
