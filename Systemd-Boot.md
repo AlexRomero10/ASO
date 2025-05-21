@@ -171,7 +171,7 @@ Como podemos observar en la imagen, systemd-boot está instalado y configurado c
 
 # Ejercicio2. Cambiar el tradicional gestor de arranque grub por systemd boot en una máquina virtual con debian 12.
 
-# Análisis Comparativo: Systemd-boot y GRUB
+## Análisis Comparativo: Systemd-boot y GRUB
 
 ## Systemd-boot
 Ventajas:
@@ -211,9 +211,9 @@ Arch Linux, Clear Linux, Pop!_OS, Fedora y Antergos.
 
 # Ejercicio3: En máquina virtual basada en Debian 12, sustituye el gestor de arranque grub por systemd-boot, en el menú de arranque deberá aparecer las siguientes opciones:
 
-# Arranque de debian 12.
-# Acceso a Firmware de la máquina virtual.
-# Acceso a la shel EFI.
+## Arranque de debian 12.
+## Acceso a Firmware de la máquina virtual.
+## Acceso a la shel EFI.
 
 
 Usaremos una máquina con el sistema Debian 12 instalado y con GRUB como gestor de arranque:
